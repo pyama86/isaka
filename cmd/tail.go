@@ -54,7 +54,11 @@ func runTail() error {
 		return err
 	}
 
-	kafkaBrokers := isaka.NewKafkaBrokers(brokersInfo, config.Listener)
+	kafkaBrokers, err := isaka.NewKafkaBrokers(brokersInfo, config.Listener, config.CA, config.Cert, config.Key)
+	if err != nil {
+		return err
+	}
+
 	reader, err := kafkaBrokers.Reader(config.Topic, os.Getenv("USER"), config.Tail)
 	if err != nil {
 		return err
@@ -62,8 +66,13 @@ func runTail() error {
 
 	defer reader.Close()
 	var cnt int64
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	for {
-		m, err := reader.ReadMessage(context.Background())
+		m, err := reader.ReadMessage(ctx)
 		if err != nil {
 			return err
 		}
@@ -82,7 +91,16 @@ func runTail() error {
 }
 
 func init() {
-	tailCmd.PersistentFlags().StringP("topic", "t", "", "topic")
+	tailCmd.PersistentFlags().String("ca", "", "ca cert file")
+	viper.BindPFlag("CA", tailCmd.PersistentFlags().Lookup("ca"))
+
+	tailCmd.PersistentFlags().String("tls-cert", "", "tls cert file")
+	viper.BindPFlag("Cert", tailCmd.PersistentFlags().Lookup("tls-cert"))
+
+	tailCmd.PersistentFlags().String("tls-key", "", "tls key file")
+	viper.BindPFlag("Key", tailCmd.PersistentFlags().Lookup("tls-key"))
+
+	tailCmd.PersistentFlags().StringP("topic", "t", "", "subscribe topic")
 	viper.BindPFlag("Topic", tailCmd.PersistentFlags().Lookup("topic"))
 
 	tailCmd.PersistentFlags().Int64P("tail", "n", 20, "tail line")

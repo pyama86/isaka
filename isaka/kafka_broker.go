@@ -2,7 +2,10 @@ package isaka
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -16,13 +19,48 @@ import (
 type KafkaBrokers struct {
 	brokersInfo KafkaBrokersInfo
 	listener    string
+	Dialer      kafka.Dialer
 }
 
-func NewKafkaBrokers(brokersInfo KafkaBrokersInfo, listener string) *KafkaBrokers {
+func NewKafkaBrokers(brokersInfo KafkaBrokersInfo, listener, ca, cert, key string) (*KafkaBrokers, error) {
+
+	tlsConfig := new(tls.Config)
+	if ca != "" {
+		CA_Pool := x509.NewCertPool()
+
+		severCert, err := ioutil.ReadFile(ca)
+		if err != nil {
+			return nil, err
+		}
+		CA_Pool.AppendCertsFromPEM(severCert)
+
+		tlsConfig.RootCAs = CA_Pool
+	}
+
+	if cert != "" && key != "" {
+		x509Cert, err := tls.LoadX509KeyPair(cert, key)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = make([]tls.Certificate, 1)
+		tlsConfig.Certificates[0] = x509Cert
+	}
+
+	if len(tlsConfig.Certificates) == 0 && tlsConfig.RootCAs == nil {
+		tlsConfig = nil
+	}
+
+	dialer := kafka.Dialer{
+		Timeout:   10 * time.Second,
+		DualStack: true,
+		TLS:       tlsConfig,
+	}
+
 	return &KafkaBrokers{
 		brokersInfo: brokersInfo,
 		listener:    listener,
-	}
+		Dialer:      dialer,
+	}, nil
 }
 
 func (k *KafkaBrokers) Reader(topic, groupID string, tail int64) (*kafka.Reader, error) {
@@ -31,7 +69,7 @@ func (k *KafkaBrokers) Reader(topic, groupID string, tail int64) (*kafka.Reader,
 		return nil, err
 	}
 
-	offset := o - tail
+	offset := o - tail - 1
 
 	group, err := kafka.NewConsumerGroup(kafka.ConsumerGroupConfig{
 		ID:      fmt.Sprintf("isaka-%s-%s", topic, groupID),
@@ -71,8 +109,9 @@ func (k *KafkaBrokers) Reader(topic, groupID string, tail int64) (*kafka.Reader,
 		Topic:    topic,
 		GroupID:  fmt.Sprintf("isaka-%s-%s", topic, groupID),
 		Brokers:  k.brokersInfo.BrokerEndpoints(k.listener),
-		MinBytes: 10e3, // 10KB
+		MinBytes: 1e3,  // 1KB
 		MaxBytes: 10e6, // 10MB
+		Dialer:   &k.Dialer,
 	})
 	return reader, nil
 }

@@ -34,6 +34,9 @@ type Config struct {
 	ZookeeperTimeout int
 	Tail             int64
 	Follow           bool
+	CA               string
+	Cert             string
+	Key              string
 }
 
 var config Config
