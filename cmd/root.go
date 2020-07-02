@@ -64,13 +64,13 @@ func Execute() {
 func init() {
 	viper.SetEnvPrefix("KafkaTail")
 
-	rootCmd.PersistentFlags().String("zookeeper", "", "zookeeper host")
+	rootCmd.PersistentFlags().StringP("zookeeper", "z", "", "zookeeper host")
 	viper.BindPFlag("ZookeeperHost", rootCmd.PersistentFlags().Lookup("zookeeper"))
 
 	rootCmd.PersistentFlags().Int("zookeeper-timeout", 10, "zookeeper timeout")
 	viper.BindPFlag("ZookeeperTimeout", rootCmd.PersistentFlags().Lookup("zookeeper-timeout"))
 
-	rootCmd.PersistentFlags().String("cluster", "cluster", "cluster name")
+	rootCmd.PersistentFlags().StringP("cluster", "c", "cluster", "cluster name")
 	viper.BindPFlag("ClusterName", rootCmd.PersistentFlags().Lookup("cluster"))
 
 	cobra.OnInitialize(func() {

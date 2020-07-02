@@ -82,16 +82,16 @@ func runTail() error {
 }
 
 func init() {
-	tailCmd.PersistentFlags().String("topic", "", "topic")
+	tailCmd.PersistentFlags().StringP("topic", "t", "", "topic")
 	viper.BindPFlag("Topic", tailCmd.PersistentFlags().Lookup("topic"))
 
-	tailCmd.PersistentFlags().Int64("tail", 20, "tail line")
+	tailCmd.PersistentFlags().Int64P("tail", "n", 20, "tail line")
 	viper.BindPFlag("Tail", tailCmd.PersistentFlags().Lookup("tail"))
 
-	tailCmd.PersistentFlags().Bool("follow", false, "follow input")
+	tailCmd.PersistentFlags().BoolP("follow", "f", false, "follow input")
 	viper.BindPFlag("Follow", tailCmd.PersistentFlags().Lookup("follow"))
 
-	tailCmd.PersistentFlags().String("listener", "PLAINTEXT", "choose listener")
+	tailCmd.PersistentFlags().StringP("listener", "l", "PLAINTEXT", "choose listener")
 	viper.BindPFlag("Listener", tailCmd.PersistentFlags().Lookup("listener"))
 	rootCmd.AddCommand(tailCmd)
 
