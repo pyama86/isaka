@@ -3,6 +3,10 @@
 Isaka is log reader for Apache kafka.
 
 ## usage
+
+```
+$ isaka --topic <topic name> --cluster <cluster name> --zookeeper <zookeepr host>
+```
 ```
 Usage:
   isaka [command]
