@@ -107,7 +107,7 @@ func init() {
 	tailCmd.PersistentFlags().String("broker-tls-key", "", "tls key file(Env:ISAKA_BROKERKEY)")
 	viper.BindPFlag("BrokerKey", tailCmd.PersistentFlags().Lookup("broker-tls-key"))
 
-	tailCmd.PersistentFlags().String("kafka-brokers", "", "kafka brokers")
+	tailCmd.PersistentFlags().String("kafka-brokers", "", "kafka brokers(Env:ISAKA_BROKERS)")
 	viper.BindPFlag("KafkaBrokers", tailCmd.PersistentFlags().Lookup("kafka-brokers"))
 
 	tailCmd.PersistentFlags().StringP("topic", "t", "", "subscribe topic")
