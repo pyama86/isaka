@@ -15,7 +15,7 @@ brew:
   commit_author:
     name: goreleaserbot
     email: goreleaser@carlosbecker.com
-  description: "Simple command-line snippet manager"
+  description: "tail log for Apache Kafka"
   homepage: "https://github.com/pyama86/isaka"
   install: |
     bin.install Dir['isaka']

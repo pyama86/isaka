@@ -2,6 +2,11 @@
 
 Isaka is log reader for Apache kafka.
 
+## insatall
+```
+brew install pyama86/homebrew-isaka/isaka
+```
+
 ## usage
 
 ```
