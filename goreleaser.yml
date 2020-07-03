@@ -1,0 +1,23 @@
+builds:
+  - binary: isaka
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      -X github.com/pyama86/isaka/cmd.version={{.Version}}
+
+brew:
+  github:
+    owner: pyama86
+    name: homebrew-isaka
+  commit_author:
+    name: goreleaserbot
+    email: goreleaser@carlosbecker.com
+  description: "Simple command-line snippet manager"
+  homepage: "https://github.com/pyama86/isaka"
+  install: |
+    bin.install Dir['isaka']
+  test: |
+    system "#{bin}/isaka"

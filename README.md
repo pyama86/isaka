@@ -13,14 +13,16 @@ Usage:
 
 Available Commands:
   help        Help about any command
-  tail        A brief description of your command
-  topic-list  A brief description of your command
+  tail        tail log from choose topic
+  topic-list  show topic list
 
 Flags:
-      --cluster string          cluster name (default "cluster")
+  -c, --cluster string          cluster name(Env:ISAKA_CLUSTERNAME) (default "cluster")
   -h, --help                    help for isaka
-      --zookeeper string        zookeeper host
+      --kafka-timeout int       kafka timeout (default 10)
+  -z, --zookeeper string        zookeeper host(Env:ISAKA_ZOOKEEPERHOST)
       --zookeeper-timeout int   zookeeper timeout (default 10)
+
 ```
 
 ## Author
