@@ -17,12 +17,12 @@ import (
 )
 
 type KafkaBrokers struct {
-	brokersInfo KafkaBrokersInfo
-	listener    string
-	Dialer      kafka.Dialer
+	brokerEndpoints []string
+	Timeout         int
+	dialer          kafka.Dialer
 }
 
-func NewKafkaBrokers(brokersInfo KafkaBrokersInfo, listener, ca, cert, key string) (*KafkaBrokers, error) {
+func NewKafkaBrokers(brokerEndpoints []string, timeout int, ca, cert, key string) (*KafkaBrokers, error) {
 
 	tlsConfig := new(tls.Config)
 	if ca != "" {
@@ -51,15 +51,15 @@ func NewKafkaBrokers(brokersInfo KafkaBrokersInfo, listener, ca, cert, key strin
 	}
 
 	dialer := kafka.Dialer{
-		Timeout:   10 * time.Second,
+		Timeout:   time.Duration(timeout) * time.Second,
 		DualStack: true,
 		TLS:       tlsConfig,
 	}
 
 	return &KafkaBrokers{
-		brokersInfo: brokersInfo,
-		listener:    listener,
-		Dialer:      dialer,
+		brokerEndpoints: brokerEndpoints,
+		dialer:          dialer,
+		Timeout:         timeout,
 	}, nil
 }
 
@@ -73,7 +73,7 @@ func (k *KafkaBrokers) Reader(topic, groupID string, tail int64) (*kafka.Reader,
 
 	group, err := kafka.NewConsumerGroup(kafka.ConsumerGroupConfig{
 		ID:      fmt.Sprintf("isaka-%s-%s", topic, groupID),
-		Brokers: k.brokersInfo.BrokerEndpoints(k.listener),
+		Brokers: k.brokerEndpoints,
 		Topics:  []string{topic},
 	})
 
@@ -108,10 +108,10 @@ func (k *KafkaBrokers) Reader(topic, groupID string, tail int64) (*kafka.Reader,
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Topic:    topic,
 		GroupID:  fmt.Sprintf("isaka-%s-%s", topic, groupID),
-		Brokers:  k.brokersInfo.BrokerEndpoints(k.listener),
+		Brokers:  k.brokerEndpoints,
 		MinBytes: 1e3,  // 1KB
 		MaxBytes: 10e6, // 10MB
-		Dialer:   &k.Dialer,
+		Dialer:   &k.dialer,
 	})
 	return reader, nil
 }
@@ -120,7 +120,7 @@ func (k *KafkaBrokers) Reader(topic, groupID string, tail int64) (*kafka.Reader,
 // thanks @robfig
 func (k *KafkaBrokers) lastOffset(topic string) (int64, error) {
 	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(k.Timeout)*time.Second)
 	defer cancel()
 
 	var Dialer kafka.Dialer
@@ -163,7 +163,7 @@ func (k *KafkaBrokers) dial(ctx context.Context, dialer *kafka.Dialer) (*kafka.C
 		conn *kafka.Conn
 		errs error
 	)
-	for _, broker := range k.brokersInfo.BrokerEndpoints(k.listener) {
+	for _, broker := range k.brokerEndpoints {
 		var err error
 		conn, err = dialer.DialContext(ctx, "tcp", broker)
 		if err != nil {

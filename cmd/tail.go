@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
+Copyright © 2020 @pyama86 www.kazu.com@gmail.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pyama86/isaka/isaka"
@@ -29,13 +30,9 @@ import (
 // tailCmd represents the tail command
 var tailCmd = &cobra.Command{
 	Use:   "tail",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "tail log from choose topic",
+	Long: `it is tail command for Apache kafka.
+You can set Broker list from Zookeeper or CLI options.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runTail(); err != nil {
 			fmt.Println(err)
@@ -45,16 +42,25 @@ to quickly create a Cobra application.`,
 }
 
 func runTail() error {
-	z, err := isaka.NewZookeeper(config.ZookeeperHost, config.ClusterName, time.Duration(config.ZookeeperTimeout)*time.Second)
-	if err != nil {
-		return err
-	}
-	brokersInfo, err := z.BrokerList()
-	if err != nil {
-		return err
+	brokerEndpoints := []string{}
+
+	if config.KafkaBrokers == "" {
+
+		z, err := isaka.NewZookeeper(config.ZookeeperHost, config.ClusterName, time.Duration(config.ZookeeperTimeout)*time.Second)
+		if err != nil {
+			return err
+		}
+		brokersInfo, err := z.BrokerList()
+		if err != nil {
+			return err
+		}
+
+		brokerEndpoints = brokersInfo.BrokerEndpoints(config.Listener)
+	} else {
+		brokerEndpoints = strings.Split(config.KafkaBrokers, ",")
 	}
 
-	kafkaBrokers, err := isaka.NewKafkaBrokers(brokersInfo, config.Listener, config.CA, config.Cert, config.Key)
+	kafkaBrokers, err := isaka.NewKafkaBrokers(brokerEndpoints, config.KafkaTimeout, config.BrokerCA, config.BrokerCert, config.BrokerKey)
 	if err != nil {
 		return err
 	}
@@ -68,10 +74,11 @@ func runTail() error {
 	var cnt int64
 
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	for {
+		ctx, cancel := context.WithTimeout(ctx, time.Duration(config.KafkaTimeout)*time.Second)
+		defer cancel()
+
 		m, err := reader.ReadMessage(ctx)
 		if err != nil {
 			return err
@@ -91,14 +98,17 @@ func runTail() error {
 }
 
 func init() {
-	tailCmd.PersistentFlags().String("ca", "", "ca cert file")
-	viper.BindPFlag("CA", tailCmd.PersistentFlags().Lookup("ca"))
+	tailCmd.PersistentFlags().String("broker-ca", "", "ca cert file(Env:ISAKA_BROKERCA)")
+	viper.BindPFlag("BrokerCA", tailCmd.PersistentFlags().Lookup("broker-ca"))
 
-	tailCmd.PersistentFlags().String("tls-cert", "", "tls cert file")
-	viper.BindPFlag("Cert", tailCmd.PersistentFlags().Lookup("tls-cert"))
+	tailCmd.PersistentFlags().String("broker-tls-cert", "", "tls cert file(Env:ISAKA_BROKERCERT)")
+	viper.BindPFlag("BrokerCert", tailCmd.PersistentFlags().Lookup("broker-tls-cert"))
 
-	tailCmd.PersistentFlags().String("tls-key", "", "tls key file")
-	viper.BindPFlag("Key", tailCmd.PersistentFlags().Lookup("tls-key"))
+	tailCmd.PersistentFlags().String("broker-tls-key", "", "tls key file(Env:ISAKA_BROKERKEY)")
+	viper.BindPFlag("BrokerKey", tailCmd.PersistentFlags().Lookup("broker-tls-key"))
+
+	tailCmd.PersistentFlags().String("kafka-brokers", "", "kafka brokers")
+	viper.BindPFlag("KafkaBrokers", tailCmd.PersistentFlags().Lookup("kafka-brokers"))
 
 	tailCmd.PersistentFlags().StringP("topic", "t", "", "subscribe topic")
 	viper.BindPFlag("Topic", tailCmd.PersistentFlags().Lookup("topic"))
@@ -111,6 +121,10 @@ func init() {
 
 	tailCmd.PersistentFlags().StringP("listener", "l", "PLAINTEXT", "choose listener")
 	viper.BindPFlag("Listener", tailCmd.PersistentFlags().Lookup("listener"))
+
+	rootCmd.PersistentFlags().Int("kafka-timeout", 10, "kafka timeout")
+	viper.BindPFlag("KafkaTimeout", rootCmd.PersistentFlags().Lookup("kafka-timeout"))
+
 	rootCmd.AddCommand(tailCmd)
 
 }

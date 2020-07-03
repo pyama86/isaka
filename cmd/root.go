@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
+Copyright © 2020 @pyama86 www.kazu.com@gmail.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,11 +32,13 @@ type Config struct {
 	Topic            string
 	Listener         string
 	ZookeeperTimeout int
+	KafkaTimeout     int
 	Tail             int64
 	Follow           bool
-	CA               string
-	Cert             string
-	Key              string
+	BrokerCA         string
+	BrokerCert       string
+	BrokerKey        string
+	KafkaBrokers     string
 }
 
 var config Config
@@ -65,15 +67,15 @@ func Execute() {
 }
 
 func init() {
-	viper.SetEnvPrefix("KafkaTail")
+	viper.SetEnvPrefix("Isaka")
 
-	rootCmd.PersistentFlags().StringP("zookeeper", "z", "", "zookeeper host")
+	rootCmd.PersistentFlags().StringP("zookeeper", "z", "", "zookeeper host(Env:ISAKA_ZOOKEEPERHOST)")
 	viper.BindPFlag("ZookeeperHost", rootCmd.PersistentFlags().Lookup("zookeeper"))
 
 	rootCmd.PersistentFlags().Int("zookeeper-timeout", 10, "zookeeper timeout")
 	viper.BindPFlag("ZookeeperTimeout", rootCmd.PersistentFlags().Lookup("zookeeper-timeout"))
 
-	rootCmd.PersistentFlags().StringP("cluster", "c", "cluster", "cluster name")
+	rootCmd.PersistentFlags().StringP("cluster", "c", "cluster", "cluster name(Env:ISAKA_CLUSTERNAME)")
 	viper.BindPFlag("ClusterName", rootCmd.PersistentFlags().Lookup("cluster"))
 
 	cobra.OnInitialize(func() {
