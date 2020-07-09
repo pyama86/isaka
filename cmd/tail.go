@@ -81,7 +81,7 @@ func runTail() error {
 
 		m, err := reader.ReadMessage(ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("topic=%s err=%s", config.Topic, err.Error())
 		}
 		fmt.Fprintln(os.Stdout, string(m.Value))
 
